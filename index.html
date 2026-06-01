@@ -1,1 +1,410 @@
-https://TU-USUARIO.github.io/oportunidades-app
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base de Oportunidades</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#f0f4f8;font-family:'DM Sans',sans-serif}
+    .app{max-width:680px;margin:0 auto;min-height:100vh}
+    .hdr-bar{background:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .hdr-bar.main{justify-content:space-between}
+    .hdr-title{font-weight:600;font-size:16px;flex:1}
+    .brand{display:flex;align-items:center;gap:8px}
+    .brand-icon{color:#2563eb;font-size:18px}
+    .brand-name{font-weight:700;font-size:18px;color:#1e293b;letter-spacing:-.3px}
+    .search-bar{padding:16px 16px 8px;display:flex;gap:8px}
+    .search-in{flex:1;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:14px;background:#fff;outline:none;transition:border .2s}
+    .search-in:focus{border-color:#2563eb}
+    .filter-sel{padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;background:#fff;outline:none;cursor:pointer;max-width:160px}
+    .chips-row{display:flex;gap:6px;padding:0 16px 12px;flex-wrap:wrap}
+    .chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;font-size:12px;font-family:inherit;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;transition:all .15s;color:#64748b}
+    .chip.sel{font-weight:600}
+    .chip-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .list{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+    .card{background:#fff;border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start;border:1.5px solid #e8edf2;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+    .card:hover{border-color:#2563eb33;box-shadow:0 4px 12px rgba(37,99,235,.1);transform:translateY(-1px)}
+    .card-main{flex:1;min-width:0}
+    .card-nombre{font-weight:600;font-size:14.5px;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card-sub{font-size:12px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tags{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+    .tag{font-size:11px;padding:2px 8px;border-radius:6px;background:#eff6ff;color:#2563eb;font-weight:500}
+    .tag.ghost{background:#f1f5f9;color:#64748b}
+    .card-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+    .card-usd{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:#059669;white-space:nowrap}
+    .ebadge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+    .ebadge.sm{font-size:11px;padding:3px 8px}
+    .edot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .detail-wrap{padding:16px}
+    .detail-hero{background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:14px;padding:24px;color:#fff;margin-bottom:16px}
+    .d-nombre{font-size:20px;font-weight:700;line-height:1.2}
+    .d-sub{font-size:13px;opacity:.75;margin-top:4px}
+    .detail-hero .ebadge{margin-top:12px}
+    .estado-box{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;border:1.5px solid #e8edf2}
+    .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#94a3b8;margin-bottom:10px}
+    .estado-btns{display:flex;gap:7px;flex-wrap:wrap}
+    .ebtn{padding:7px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer;transition:all .15s;color:#475569}
+    .ebtn.active{font-weight:700}
+    .detail-grid{background:#fff;border-radius:14px;border:1.5px solid #e8edf2;overflow:hidden}
+    .drow{display:flex;padding:11px 16px;border-bottom:1px solid #f1f5f9}
+    .drow:last-child{border-bottom:none}
+    .dlabel{font-size:12px;color:#64748b;font-weight:600;width:42%;flex-shrink:0}
+    .dval{font-size:13px;color:#1e293b}
+    .form-wrap{padding:16px;display:flex;flex-direction:column;gap:12px}
+    .fgroup{background:#fff;border-radius:12px;padding:14px 16px;border:1.5px solid #e8edf2}
+    .flabel{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;margin-bottom:7px}
+    .fi{width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:14px;background:#f8fafc;outline:none;transition:border .2s;color:#1e293b}
+    .fi:focus{border-color:#2563eb;background:#fff}
+    .form-actions{padding:8px 0 24px}
+    .err-box{background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500}
+    .btn-primary{background:#2563eb;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+    .btn-primary:hover{background:#1d4ed8}
+    .btn-primary:disabled{background:#93c5fd}
+    .btn-primary.compact{padding:8px 16px;font-size:13px}
+    .btn-primary.full{width:100%;padding:14px}
+    .btn-back{background:none;border:none;font-family:inherit;font-size:14px;color:#2563eb;cursor:pointer;font-weight:600;padding:0}
+    .btn-ghost{background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;padding:6px 10px;cursor:pointer;font-size:13px}
+    .btn-icon{background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 11px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:500}
+    .btn-icon.sm{padding:5px 9px;font-size:12px}
+    .btn-icon.danger{background:#fff1f2;border-color:#fecdd3;color:#e11d48}
+    .empty{text-align:center;color:#94a3b8;padding:60px 20px;font-size:15px;display:flex;flex-direction:column;align-items:center}
+    .spinner{width:32px;height:32px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .footer{text-align:center;color:#cbd5e1;font-size:11px;padding:16px}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeup .2s ease;white-space:nowrap}
+    .toast.warn{background:#b45309}
+    .toast.err{background:#dc2626}
+    @keyframes fadeup{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK5o2M_ozwtjWcYupQVI-NhJsbVOUuvOvKkAQTW6N025tkBJ6jbBCYbbiwwXd4fSFh1A/exec";
+
+const OPCIONES = {
+  Vendedor: ["ANA LAURA PORCARI","DE LA CUESTA HERNAN","KUMORKIEWICZ VIRNA"],
+  Producto: ["VRF","Mini VRF","Multi Splt","Mini Split","Rooftop","Chiller","Aerotermia","AHU","Pantalla","TV","Anafe","Campana","Horno","Heladera","Electrodomesticos"],
+  Marca: ["LG","Hisense","Philco","Siam","Bosch"],
+  Provincia: ["Buenos Aires","Santa Fe","Cordoba","Mendoza","Santiago del Estero","Chaco","Salta","Corrientes","Entre Rios","Misiones","Neuquen","Formosa","Jujuy","San Juan","La Rioja","Tucuman","San Luis","La Pampa","Chubut","Santa Cruz","Tierra del Fuego","Rio Negro","Catamarca"],
+  Asesor: ["Carlos grinbrg","Martin Sierra","GNBA","Green Group","Julio Blasco","Paula Hernandez","Estudio Romano Echeverria","Anile"],
+  "Real state": ["SI","NO"],
+  Estado: ["Registrado","Cotizado","Ganado","Perdido","Suspendido"],
+};
+
+const CAMPOS = ["Vendedor","Nombre Oportunidad","Valor USD","CUENTA","RAZON SOCIAL","Asesor","Producto","Marca","Provincia","Ciudad","Capacidad HP","Real state","Observaciones","Estado"];
+
+const COLORES = {
+  Registrado: { bg:"#dbeafe", text:"#1e40af", dot:"#3b82f6" },
+  Cotizado:   { bg:"#fef9c3", text:"#854d0e", dot:"#eab308" },
+  Ganado:     { bg:"#dcfce7", text:"#166534", dot:"#22c55e" },
+  Perdido:    { bg:"#fee2e2", text:"#991b1b", dot:"#ef4444" },
+  Suspendido: { bg:"#f3f4f6", text:"#374151", dot:"#9ca3af" },
+};
+
+// JSONP — funciona sin restricciones CORS desde cualquier página
+function jsonp(params) {
+  return new Promise((resolve, reject) => {
+    const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random()*99999);
+    const timer = setTimeout(() => {
+      delete window[cb];
+      document.getElementById(cb)?.remove();
+      reject(new Error("Timeout - verificá tu conexión"));
+    }, 20000);
+
+    window[cb] = (data) => {
+      clearTimeout(timer);
+      delete window[cb];
+      document.getElementById(cb)?.remove();
+      if (data && data.error) reject(new Error(data.error));
+      else resolve(data);
+    };
+
+    const qs = Object.entries({ ...params, callback: cb })
+      .map(([k,v]) => encodeURIComponent(k) + "=" + encodeURIComponent(String(v)))
+      .join("&");
+
+    const s = document.createElement("script");
+    s.id = cb;
+    s.src = SCRIPT_URL + "?" + qs;
+    s.onerror = () => {
+      clearTimeout(timer);
+      delete window[cb];
+      s.remove();
+      reject(new Error("No se pudo conectar con Google Sheets"));
+    };
+    document.head.appendChild(s);
+  });
+}
+
+function exportarPDF(op) {
+  const win = window.open("","_blank");
+  const col = COLORES[op.Estado] || { bg:"#f3f4f6", text:"#374151" };
+  const filas = CAMPOS.map(c => `<tr><td style="font-weight:600;color:#64748b;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;width:40%">${c}</td><td style="padding:8px 12px;border:1px solid #e2e8f0">${op[c]||"—"}</td></tr>`).join("");
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Oportunidad</title>
+  <style>body{font-family:'Segoe UI',sans-serif;margin:0;padding:32px;color:#1e293b}.hdr{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:28px 32px;border-radius:12px;margin-bottom:28px}.badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:600;background:${col.bg};color:${col.text};margin-top:10px}table{width:100%;border-collapse:collapse}.foot{margin-top:28px;text-align:right;color:#94a3b8;font-size:12px}@media print{body{padding:16px}}</style>
+  </head><body>
+  <div class="hdr"><div style="font-size:22px;font-weight:700">${op["Nombre Oportunidad"]||op["RAZON SOCIAL"]||"Oportunidad"}</div><div style="opacity:.8;margin-top:4px">${op["RAZON SOCIAL"]||""}</div><div class="badge">${op.Estado||"Sin estado"}</div></div>
+  <table>${filas}</table>
+  <div class="foot">Generado el ${new Date().toLocaleDateString("es-AR")} · Base de Oportunidades</div>
+  <script>window.onload=()=>{window.print()}<\/script></body></html>`);
+  win.document.close();
+}
+
+function CampoSelect({ campo, value, onChange }) {
+  const opts = OPCIONES[campo] || null;
+  const [otro, setOtro] = useState(false);
+  const [otroVal, setOtroVal] = useState("");
+  useEffect(() => {
+    if (opts && value && !opts.includes(value) && value !== "") { setOtro(true); setOtroVal(value); }
+  }, []);
+  if (!opts) return <input className="fi" value={value} onChange={e=>onChange(e.target.value)} placeholder={`Ingresar ${campo}`}/>;
+  if (otro) return (
+    <div style={{display:"flex",gap:6}}>
+      <input className="fi" style={{flex:1}} value={otroVal} autoFocus
+        onChange={e=>{setOtroVal(e.target.value);onChange(e.target.value);}} placeholder={`Nuevo ${campo}`}/>
+      <button className="btn-ghost" onClick={()=>{setOtro(false);onChange("");setOtroVal("");}}>✕</button>
+    </div>
+  );
+  return (
+    <select className="fi" value={value} onChange={e=>{
+      if(e.target.value==="__otro__"){setOtro(true);onChange("");}
+      else onChange(e.target.value);
+    }}>
+      <option value="">— Seleccionar —</option>
+      {opts.map(o=><option key={o} value={o}>{o}</option>)}
+      <option value="__otro__">➕ Otros...</option>
+    </select>
+  );
+}
+
+function App() {
+  const [vista, setVista] = useState("lista");
+  const [ops, setOps] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [sel, setSel] = useState(null);
+  const [form, setForm] = useState({});
+  const [edicion, setEdicion] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [error, setError] = useState("");
+
+  const msg = (text, tipo="ok") => { setToast({text,tipo}); setTimeout(()=>setToast(null),3500); };
+
+  const cargar = async () => {
+    setCargando(true);
+    try { setOps(await jsonp({ action:"list" })); }
+    catch(e) { msg("Error al cargar: "+e.message,"err"); }
+    setCargando(false);
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const filtradas = ops.filter(op => {
+    const t = busqueda.toLowerCase();
+    return (!t || CAMPOS.some(c=>(op[c]||"").toLowerCase().includes(t)))
+      && (!filtroEstado || op.Estado===filtroEstado);
+  });
+
+  const guardar = async (data) => {
+    setGuardando(true); setError("");
+    try {
+      const id = data.id || Date.now().toString();
+      const campos = { id };
+      CAMPOS.forEach(c => { campos[c] = data[c] || ""; });
+      await jsonp({ action: data.id ? "update" : "save", ...campos });
+      if (data.id) {
+        const upd = { ...data, ...campos };
+        setOps(prev => prev.map(o => o.id===data.id ? upd : o));
+        if (sel?.id===data.id) setSel(upd);
+        msg("Actualizado en Google Sheets ✓");
+      } else {
+        setOps(prev => [...prev, { ...campos }]);
+        msg("Guardado en Google Sheets ✓");
+      }
+      setVista(edicion ? "detalle" : "lista");
+      setEdicion(false);
+    } catch(e) { setError("No se pudo guardar: " + e.message); }
+    setGuardando(false);
+  };
+
+  const eliminar = async (id) => {
+    if (!confirm("¿Eliminar esta oportunidad?")) return;
+    try {
+      await jsonp({ action:"delete", id });
+      setOps(prev => prev.filter(o=>o.id!==id));
+      msg("Eliminada","warn"); setVista("lista");
+    } catch(e) { msg("Error: "+e.message,"err"); }
+  };
+
+  const cambiarEstado = async (id, estado) => {
+    const op = ops.find(o=>o.id===id); if(!op) return;
+    const upd = {...op, Estado:estado};
+    const campos = { id }; CAMPOS.forEach(c=>{campos[c]=upd[c]||"";});
+    try {
+      await jsonp({ action:"update", ...campos });
+      setOps(prev=>prev.map(o=>o.id===id?upd:o));
+      setSel(upd); msg(`Estado → ${estado} ✓`);
+    } catch(e) { msg("Error: "+e.message,"err"); }
+  };
+
+  // FORMULARIO
+  if (vista==="nueva" || edicion) return (
+    <div className="app">
+      <header className="hdr-bar">
+        <button className="btn-back" onClick={()=>{setVista(edicion?"detalle":"lista");setEdicion(false);}}>← Volver</button>
+        <span className="hdr-title">{edicion?"Editar":"Nueva Oportunidad"}</span>
+      </header>
+      <div className="form-wrap">
+        {CAMPOS.map(c=>(
+          <div className="fgroup" key={c}>
+            <label className="flabel">{c}</label>
+            <CampoSelect campo={c} value={form[c]||""} onChange={v=>setForm(p=>({...p,[c]:v}))}/>
+          </div>
+        ))}
+        {error && <div className="err-box">{error}</div>}
+        <div className="form-actions">
+          <button className="btn-primary full" disabled={guardando}
+            onClick={()=>guardar({...form, id:edicion?sel.id:null})}>
+            {guardando?"⏳ Guardando en Sheets...":"💾 Guardar Oportunidad"}
+          </button>
+        </div>
+      </div>
+      {toast && <div className={`toast ${toast.tipo}`}>{toast.text}</div>}
+    </div>
+  );
+
+  // DETALLE
+  if (vista==="detalle" && sel) {
+    const col = COLORES[sel.Estado]||{bg:"#f3f4f6",text:"#374151",dot:"#9ca3af"};
+    return (
+      <div className="app">
+        <header className="hdr-bar">
+          <button className="btn-back" onClick={()=>setVista("lista")}>← Volver</button>
+          <span className="hdr-title">Detalle</span>
+          <div style={{display:"flex",gap:8}}>
+            <button className="btn-icon" onClick={()=>{setForm({...sel});setEdicion(true);}}>✏️</button>
+            <button className="btn-icon" onClick={()=>exportarPDF(sel)}>📄 PDF</button>
+            <button className="btn-icon danger" onClick={()=>eliminar(sel.id)}>🗑️</button>
+          </div>
+        </header>
+        <div className="detail-wrap">
+          <div className="detail-hero">
+            <div className="d-nombre">{sel["Nombre Oportunidad"]||sel["RAZON SOCIAL"]||"Sin nombre"}</div>
+            <div className="d-sub">{sel["RAZON SOCIAL"]}</div>
+            <div className="ebadge" style={{background:col.bg,color:col.text}}>
+              <span className="edot" style={{background:col.dot}}></span>{sel.Estado||"Sin estado"}
+            </div>
+          </div>
+          <div className="estado-box">
+            <div className="sec-title">Cambiar Estado</div>
+            <div className="estado-btns">
+              {OPCIONES.Estado.map(e=>{
+                const c=COLORES[e];
+                return <button key={e} className={`ebtn${sel.Estado===e?" active":""}`}
+                  style={sel.Estado===e?{background:c.bg,color:c.text,borderColor:c.dot}:{}}
+                  onClick={()=>cambiarEstado(sel.id,e)}>{e}</button>;
+              })}
+            </div>
+          </div>
+          <div className="detail-grid">
+            {CAMPOS.filter(c=>c!=="Estado"&&sel[c]).map(c=>(
+              <div className="drow" key={c}>
+                <span className="dlabel">{c}</span>
+                <span className="dval">{sel[c]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {toast && <div className={`toast ${toast.tipo}`}>{toast.text}</div>}
+      </div>
+    );
+  }
+
+  // LISTA
+  return (
+    <div className="app">
+      <header className="hdr-bar main">
+        <div className="brand">
+          <span className="brand-icon">◆</span>
+          <span className="brand-name">Oportunidades</span>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button className="btn-icon sm" onClick={cargar} title="Actualizar">🔄</button>
+          <button className="btn-primary compact" onClick={()=>{setForm({});setVista("nueva");}}>+ Nueva</button>
+        </div>
+      </header>
+      <div className="search-bar">
+        <input className="search-in" placeholder="🔍 Buscar por nombre, empresa, producto..."
+          value={busqueda} onChange={e=>setBusqueda(e.target.value)}/>
+        <select className="filter-sel" value={filtroEstado} onChange={e=>setFiltroEstado(e.target.value)}>
+          <option value="">Todos</option>
+          {OPCIONES.Estado.map(e=><option key={e} value={e}>{e}</option>)}
+        </select>
+      </div>
+      <div className="chips-row">
+        {OPCIONES.Estado.map(e=>{
+          const n=ops.filter(o=>o.Estado===e).length;
+          const c=COLORES[e];
+          return (
+            <button key={e} className={`chip${filtroEstado===e?" sel":""}`}
+              style={filtroEstado===e?{background:c.bg,color:c.text,borderColor:c.dot}:{}}
+              onClick={()=>setFiltroEstado(filtroEstado===e?"":e)}>
+              <span className="chip-dot" style={{background:c.dot}}></span>
+              {e} <strong>{n}</strong>
+            </button>
+          );
+        })}
+      </div>
+      {cargando ? (
+        <div className="empty">
+          <div className="spinner"></div>
+          <div style={{marginTop:12}}>Conectando con Google Sheets...</div>
+        </div>
+      ) : filtradas.length===0 ? (
+        <div className="empty">{busqueda||filtroEstado?"Sin resultados.":"No hay oportunidades. ¡Creá la primera!"}</div>
+      ) : (
+        <div className="list">
+          {filtradas.map(op=>{
+            const col=COLORES[op.Estado]||{bg:"#f3f4f6",text:"#374151",dot:"#9ca3af"};
+            return (
+              <div key={op.id} className="card" onClick={()=>{setSel(op);setVista("detalle");}}>
+                <div className="card-main">
+                  <div className="card-nombre">{op["Nombre Oportunidad"]||op["RAZON SOCIAL"]||"—"}</div>
+                  <div className="card-sub">{op["RAZON SOCIAL"]}{op.Provincia?` · ${op.Provincia}`:""}</div>
+                  <div className="tags">
+                    {op.Producto&&<span className="tag">{op.Producto}</span>}
+                    {op.Marca&&<span className="tag">{op.Marca}</span>}
+                    {op.Vendedor&&<span className="tag ghost">{op.Vendedor}</span>}
+                  </div>
+                </div>
+                <div className="card-right">
+                  {op["Valor USD"]&&<div className="card-usd">USD {op["Valor USD"]}</div>}
+                  <div className="ebadge sm" style={{background:col.bg,color:col.text}}>
+                    <span className="edot" style={{background:col.dot}}></span>{op.Estado||"—"}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="footer">{ops.length} oportunidad{ops.length!==1?"es":""} · Google Sheets</div>
+      {toast && <div className={`toast ${toast.tipo}`}>{toast.text}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
