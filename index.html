@@ -144,6 +144,37 @@ function jsonp(params) {
   });
 }
 
+function exportarTodoPDF(lista, filtroEstado) {
+  const win = window.open("","_blank");
+  const fecha = new Date().toLocaleDateString("es-AR");
+  const titulo = filtroEstado ? "Oportunidades · " + filtroEstado : "Todas las Oportunidades";
+  const colDot = {Registrado:"#3b82f6",Cotizado:"#eab308",Ganado:"#22c55e",Perdido:"#ef4444",Suspendido:"#9ca3af"};
+  const filas = lista.map(op => {
+    const col = colDot[op.Estado]||"#9ca3af";
+    return "<tr><td style=\"padding:8px 12px;border:1px solid #e2e8f0;font-weight:600\">" + (op["Nombre Oportunidad"]||"—") + "</td><td style=\"padding:8px 12px;border:1px solid #e2e8f0\">" + (op["RAZON SOCIAL"]||"—") + "</td><td style=\"padding:8px 12px;border:1px solid #e2e8f0\">" + (op.Vendedor||"—") + "</td><td style=\"padding:8px 12px;border:1px solid #e2e8f0\">" + (op.Producto||"—") + "</td><td style=\"padding:8px 12px;border:1px solid #e2e8f0\">" + (op.Provincia||"—") + "</td><td style=\"padding:8px 12px;border:1px solid #e2e8f0;font-family:monospace\">" + (op["Valor USD"]?"USD "+op["Valor USD"]:"—") + "</td><td style=\"padding:8px 12px;border:1px solid #e2e8f0\"><span style=\"background:" + col + "22;color:" + col + ";padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600\">" + (op.Estado||"—") + "</span></td></tr>";
+  }).join("");
+  win.document.write("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + titulo + "</title><style>body{font-family:\'Segoe UI\',sans-serif;margin:0;padding:24px;color:#1e293b}.hdr{background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:20px 28px;border-radius:12px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#f8fafc;padding:10px 12px;border:1px solid #e2e8f0;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b}tr:nth-child(even) td{background:#f8fafc}.foot{margin-top:16px;text-align:right;color:#94a3b8;font-size:11px}@media print{body{padding:8px}@page{size:landscape}}<\/style><\/head><body><div class=\"hdr\"><div><div style=\"font-size:20px;font-weight:700\">" + titulo + "<\/div><div style=\"opacity:.75;margin-top:4px;font-size:13px\">" + lista.length + " oportunidad" + (lista.length!==1?"es":"") + "<\/div><\/div><div style=\"opacity:.75;font-size:13px\">" + fecha + "<\/div><\/div><table><thead><tr><th>Nombre Oportunidad<\/th><th>Razón Social<\/th><th>Vendedor<\/th><th>Producto<\/th><th>Provincia<\/th><th>Valor USD<\/th><th>Estado<\/th><\/tr><\/thead><tbody>" + filas + "<\/tbody><\/table><div class=\"foot\">Base de Oportunidades · Generado el " + fecha + "<\/div><script>window.onload=()=>{window.print()}<\/scr" + "ipt><\/body><\/html>");
+  win.document.close();
+}
+
+function exportarCSV(lista) {
+  const encabezados = ["id", ...CAMPOS];
+  const filas = lista.map(op =>
+    encabezados.map(c => {
+      const val = String(op[c] || "").replace(/"/g, "\"\"");
+      return "\"" + val + "\"";
+    }).join(",")
+  );
+  const csv = [encabezados.join(","), ...filas].join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "oportunidades_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function exportarPDF(op) {
   const win = window.open("","_blank");
   const col = COLORES[op.Estado] || { bg:"#f3f4f6", text:"#374151" };
@@ -364,6 +395,16 @@ function App() {
             </button>
           );
         })}
+      </div>
+      <div style={{display:"flex",gap:8,padding:"0 16px 12px",flexWrap:"wrap"}}>
+        <button className="btn-icon" style={{fontSize:"12px",padding:"6px 12px"}}
+          onClick={()=>exportarTodoPDF(filtradas, filtroEstado)}>
+          📄 Exportar PDF ({filtradas.length})
+        </button>
+        <button className="btn-icon" style={{fontSize:"12px",padding:"6px 12px"}}
+          onClick={()=>exportarCSV(filtradas)}>
+          📊 Exportar Excel/CSV ({filtradas.length})
+        </button>
       </div>
       {cargando ? (
         <div className="empty">
