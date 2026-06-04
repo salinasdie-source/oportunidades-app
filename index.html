@@ -260,6 +260,10 @@ function LoginScreen({ onLogin }) {
           <div style={{fontSize:"28px",marginBottom:"8px"}}>◆</div>
           <div style={{fontSize:"20px",fontWeight:700,color:"#1e293b"}}>Oportunidades</div>
           <div style={{fontSize:"13px",color:"#94a3b8",marginTop:"4px"}}>{modo==="login"?"Ingresá con tu cuenta":"Solicitá acceso"}</div>
+          <div style={{marginTop:"16px",padding:"10px 14px",background:"#fde8ef",borderRadius:"10px",border:"1px solid #f4a0b5"}}>
+            <div style={{fontSize:"11px",fontWeight:700,color:"#A50034",textTransform:"uppercase",letterSpacing:".6px",marginBottom:"3px"}}>⚠️ Información Confidencial</div>
+            <div style={{fontSize:"11px",color:"#6B0020",lineHeight:1.5}}>La información incluida en esta APP es CONFIDENCIAL y no debe compartirse con personas que no tengan un usuario confirmado.</div>
+          </div>
         </div>
 
         {modo==="registro" && (
@@ -723,6 +727,10 @@ function App() {
         </div>
       )}
       <div className="footer">{ops.length} oportunidad{ops.length!==1?"es":""} &#183; Google Sheets</div>
+      <div style={{margin:"0 16px 24px",padding:"10px 14px",background:"#fde8ef",borderRadius:"10px",border:"1px solid #f4a0b5"}}>
+        <div style={{fontSize:"11px",fontWeight:700,color:"#A50034",textTransform:"uppercase",letterSpacing:".6px",marginBottom:"3px"}}>⚠️ Información Confidencial</div>
+        <div style={{fontSize:"11px",color:"#6B0020",lineHeight:1.5}}>La información incluida en esta APP es CONFIDENCIAL y no debe compartirse con personas que no tengan un usuario confirmado.</div>
+      </div>
       {toast && <div className={"toast "+toast.tipo}>{toast.text}</div>}
       {adminPanel && <AdminPanel onClose={()=>setAdminPanel(false)}/>}
     </div>
