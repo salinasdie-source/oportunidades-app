@@ -50,7 +50,7 @@
     .estado-btns{display:flex;gap:7px;flex-wrap:wrap}
     .ebtn{padding:7px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;border:1.5px solid #e2e8f0;background:#f8fafc;cursor:pointer;transition:all .15s;color:#475569}
     .ebtn.active{font-weight:700}
-    .detail-grid{background:#fff;border-radius:14px;border:1.5px solid #e8edf2;overflow:hidden}
+    .detail-grid{background:#fff;border-radius:14px;border:1.5px solid #e8edf2;overflow:hidden;margin-bottom:16px}
     .drow{display:flex;padding:11px 16px;border-bottom:1px solid #f1f5f9}
     .drow:last-child{border-bottom:none}
     .dlabel{font-size:12px;color:#64748b;font-weight:600;width:42%;flex-shrink:0}
@@ -87,7 +87,7 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZ7Og_x0lBemjVJHb3skN5lrkTxJyoh0YrM0nk_K0H4FH_xhrV-Ha3ACzYj9NAUJ18Cw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzS52cb_A3m4lWOVVMDfxnxHdz1GloLwpEwWR7sUo0sePqlVFNmjUbSLONh1j5N1y0COw/exec";
 
 const OPCIONES = {
   Vendedor: ["ANA LAURA PORCARI","DE LA CUESTA HERNAN","KUMORKIEWICZ VIRNA"],
@@ -100,7 +100,7 @@ const OPCIONES = {
   Estado: ["Registrado","Cotizado","Ganado","Perdido","Suspendido"],
 };
 
-const CAMPOS = ["Vendedor","Nombre Oportunidad","Valor USD","CUENTA","RAZON SOCIAL","Asesor","Producto","Marca","Provincia","Ciudad","Capacidad HP","Real state","Observaciones","Estado"];
+const CAMPOS = ["Vendedor","Nombre Oportunidad","Valor USD","RAZON SOCIAL","Asesor","Producto","Marca","Provincia","Ciudad","Capacidad HP","Real state","Observaciones","Estado"];
 
 const COLORES = {
   Registrado: { bg:"#dbeafe", text:"#1e40af", dot:"#3b82f6" },
@@ -158,23 +158,6 @@ function exportarTodoPDF(lista, filtroEstado) {
   win.document.close();
 }
 
-function exportarCSV(lista) {
-  const encabezados = ["id", ...CAMPOS];
-  const filas = lista.map(op =>
-    encabezados.map(c => {
-      const val = String(op[c] || "").replace(/"/g, "\"\"");
-      return "\"" + val + "\"";
-    }).join(",")
-  );
-  const csv = [encabezados.join(","), ...filas].join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "oportunidades_" + new Date().toISOString().slice(0,10) + ".csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 function exportarPDF(op) {
   const win = window.open("","_blank");
@@ -192,84 +175,243 @@ function exportarPDF(op) {
 
 function CampoSelect({ campo, value, onChange }) {
   const opts = OPCIONES[campo] || null;
-  const [busq, setBusq] = useState("");
-  const [abierto, setAbierto] = useState(false);
-  const [otroMode, setOtroMode] = useState(false);
-  const [otroVal, setOtroVal] = useState("");
-  const inputRef = React.useRef(null);
 
-  useEffect(() => {
-    if (opts && value && !opts.includes(value) && value !== "") {
-      setOtroMode(true); setOtroVal(value);
-    }
-  }, []);
-
-  // Campo libre sin opciones
-  if (!opts) return <input className="fi" value={value} onChange={e=>onChange(e.target.value)} placeholder={`Ingresar ${campo}`}/>;
-
-  // Modo "otro"
-  if (otroMode) return (
-    <div style={{display:"flex",gap:6}}>
-      <input className="fi" style={{flex:1}} value={otroVal} autoFocus
-        onChange={e=>{setOtroVal(e.target.value);onChange(e.target.value);}} placeholder={`Nuevo ${campo}`}/>
-      <button className="btn-ghost" onClick={()=>{setOtroMode(false);onChange("");setOtroVal("");setBusq("");}}>✕</button>
-    </div>
+  // Sin opciones: input libre
+  if (!opts) return (
+    <input className="fi" value={value}
+      onChange={e=>onChange(e.target.value)}
+      placeholder={"Ingresar "+campo}/>
   );
 
-  // Lista pequeña (<= 20 opciones): select normal
+  // Lista pequeña (<= 20): select nativo
   if (opts.length <= 20) return (
-    <select className="fi" value={value} onChange={e=>{
-      if(e.target.value==="__otro__"){setOtroMode(true);onChange("");}
-      else onChange(e.target.value);
-    }}>
+    <select className="fi" value={value} onChange={e=>onChange(e.target.value)}>
       <option value="">— Seleccionar —</option>
       {opts.map(o=><option key={o} value={o}>{o}</option>)}
-      <option value="__otro__">➕ Otros...</option>
+      <option value="__nuevo__">➕ Escribir nuevo...</option>
     </select>
   );
 
-  // Lista grande: buscador con dropdown
-  const filtradas = busq.length >= 1
-    ? opts.filter(o => o.toLowerCase().includes(busq.toLowerCase())).slice(0, 50)
-    : [];
-
+  // Lista grande: input + datalist (nativo del browser, funciona en todos los dispositivos)
+  const listId = "dl-"+campo.replace(/\s/g,"_");
   return (
-    <div style={{position:"relative"}}>
-      <div style={{display:"flex",gap:6}}>
-        <input className="fi" style={{flex:1}}
-          ref={inputRef}
-          value={abierto ? busq : (value || "")}
-          placeholder={value ? value : `Buscar ${campo}...`}
-          onFocus={()=>{ setAbierto(true); setBusq(""); }}
-          onChange={e=>{ setBusq(e.target.value); setAbierto(true); }}
-          onBlur={()=>setTimeout(()=>setAbierto(false),200)}
-          readOnly={!abierto}
-        />
-        {value && <button className="btn-ghost" onClick={()=>{onChange("");setBusq("");setAbierto(false);}}>✕</button>}
-      </div>
-      {abierto && (
-        <div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1.5px solid #2563eb",borderRadius:"8px",zIndex:999,maxHeight:"200px",overflowY:"auto",boxShadow:"0 4px 12px rgba(0,0,0,.1)"}}>
-          {busq.length < 1 && (
-            <div style={{padding:"8px 12px",fontSize:"12px",color:"#94a3b8"}}>Escribí para buscar...</div>
-          )}
-          {filtradas.map(o=>(
-            <div key={o} style={{padding:"9px 12px",cursor:"pointer",fontSize:"13px",borderBottom:"1px solid #f1f5f9"}}
-              onMouseDown={()=>{ onChange(o); setBusq(""); setAbierto(false); }}>
-              {o}
-            </div>
-          ))}
-          {busq.length >= 1 && filtradas.length === 0 && (
-            <div style={{padding:"8px 12px",fontSize:"12px",color:"#94a3b8"}}>Sin resultados</div>
-          )}
-          <div style={{padding:"9px 12px",cursor:"pointer",fontSize:"13px",color:"#2563eb",fontWeight:600,borderTop:"1px solid #e2e8f0"}}
-            onMouseDown={()=>{ setOtroMode(true); setAbierto(false); }}>
-            ➕ Agregar nuevo...
-          </div>
-        </div>
-      )}
+    <div>
+      <input className="fi" value={value}
+        onChange={e=>onChange(e.target.value)}
+        list={listId}
+        placeholder={"Buscar o escribir "+campo+"..."}
+        autoComplete="off"
+      />
+      <datalist id={listId}>
+        {opts.map(o=><option key={o} value={o}/>)}
+      </datalist>
     </div>
   );
 }
+
+
+
+// ── LOGIN / REGISTRO / ADMIN ──────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [modo, setModo] = useState("login"); // login | registro
+  const [usuario, setUsuario] = useState("");
+  const [password, setPassword] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [cargando, setCargando] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [msgTipo, setMsgTipo] = useState("ok");
+
+  const mostrar = (texto, tipo="ok") => { setMsg(texto); setMsgTipo(tipo); };
+
+  const handleLogin = async () => {
+    if (!usuario || !password) { mostrar("Completá usuario y contraseña","err"); return; }
+    setCargando(true); setMsg("");
+    try {
+      const res = await jsonp({ action:"login", usuario, password });
+      if (res.ok) {
+        onLogin({ usuario, nombre: res.nombre });
+      } else {
+        mostrar(res.msg || "Datos incorrectos","err");
+      }
+    } catch(e) { mostrar("Error de conexión","err"); }
+    setCargando(false);
+  };
+
+  const handleRegistro = async () => {
+    if (!usuario || !password || !nombre) { mostrar("Completá todos los campos","err"); return; }
+    if (password.length < 4) { mostrar("La contraseña debe tener al menos 4 caracteres","err"); return; }
+    setCargando(true); setMsg("");
+    try {
+      const res = await jsonp({ action:"registro", usuario, password, nombre });
+      if (res.ok) {
+        mostrar(res.msg,"ok");
+        setTimeout(()=>setModo("login"),2500);
+      } else {
+        mostrar(res.msg || "Error al registrarse","err");
+      }
+    } catch(e) { mostrar("Error de conexión","err"); }
+    setCargando(false);
+  };
+
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#1e3a5f,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+      <div style={{background:"#fff",borderRadius:"20px",padding:"32px 28px",width:"100%",maxWidth:"360px",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
+        <div style={{textAlign:"center",marginBottom:"28px"}}>
+          <div style={{fontSize:"28px",marginBottom:"8px"}}>◆</div>
+          <div style={{fontSize:"20px",fontWeight:700,color:"#1e293b"}}>Oportunidades</div>
+          <div style={{fontSize:"13px",color:"#94a3b8",marginTop:"4px"}}>{modo==="login"?"Ingresá con tu cuenta":"Solicitá acceso"}</div>
+        </div>
+
+        {modo==="registro" && (
+          <div style={{marginBottom:"14px"}}>
+            <label style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:".7px",color:"#94a3b8",display:"block",marginBottom:"6px"}}>Nombre completo</label>
+            <input className="fi" value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Tu nombre"/>
+          </div>
+        )}
+        <div style={{marginBottom:"14px"}}>
+          <label style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:".7px",color:"#94a3b8",display:"block",marginBottom:"6px"}}>Usuario</label>
+          <input className="fi" value={usuario} onChange={e=>setUsuario(e.target.value)} placeholder="tu.usuario" autoCapitalize="none"/>
+        </div>
+        <div style={{marginBottom:"20px"}}>
+          <label style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:".7px",color:"#94a3b8",display:"block",marginBottom:"6px"}}>Contraseña</label>
+          <input className="fi" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••"/>
+        </div>
+
+        {msg && (
+          <div style={{padding:"10px 14px",borderRadius:"8px",fontSize:"13px",fontWeight:500,marginBottom:"16px",
+            background:msgTipo==="ok"?"#f0fdf4":"#fee2e2",
+            color:msgTipo==="ok"?"#166534":"#991b1b"}}>
+            {msg}
+          </div>
+        )}
+
+        <button className="btn-primary full" disabled={cargando}
+          onClick={modo==="login"?handleLogin:handleRegistro}>
+          {cargando?"Procesando...":(modo==="login"?"Ingresar":"Solicitar acceso")}
+        </button>
+
+        <div style={{textAlign:"center",marginTop:"16px"}}>
+          {modo==="login" ? (
+            <span style={{fontSize:"13px",color:"#64748b"}}>
+              ¿No tenés acceso?{" "}
+              <button style={{background:"none",border:"none",color:"#2563eb",fontWeight:600,cursor:"pointer",fontSize:"13px"}}
+                onClick={()=>{setModo("registro");setMsg("");}}>Solicitá acceso</button>
+            </span>
+          ) : (
+            <button style={{background:"none",border:"none",color:"#2563eb",fontWeight:600,cursor:"pointer",fontSize:"13px"}}
+              onClick={()=>{setModo("login");setMsg("");}}>← Volver al login</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminPanel({ onClose }) {
+  const [datos, setDatos] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [msg, setMsg] = useState("");
+
+  const cargar = async () => {
+    setCargando(true);
+    try {
+      const res = await jsonp({ action:"listUsers" });
+      if (res.ok) setDatos(res);
+    } catch(e) {}
+    setCargando(false);
+  };
+
+  useEffect(()=>{ cargar(); },[]);
+
+  const aprobar = async (usuario) => {
+    try {
+      await jsonp({ action:"aprobarUser", usuario });
+      setMsg("Usuario aprobado ✓");
+      cargar();
+    } catch(e) { setMsg("Error"); }
+  };
+
+  const rechazar = async (usuario) => {
+    if (!confirm("¿Rechazar a "+usuario+"?")) return;
+    try {
+      await jsonp({ action:"rechazarUser", usuario });
+      setMsg("Solicitud rechazada");
+      cargar();
+    } catch(e) { setMsg("Error"); }
+  };
+
+  const eliminar = async (usuario) => {
+    if (!confirm("¿Eliminar usuario "+usuario+"?")) return;
+    try {
+      await jsonp({ action:"eliminarUser", usuario });
+      setMsg("Usuario eliminado");
+      cargar();
+    } catch(e) { setMsg("Error"); }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:2000,overflowY:"auto",padding:"20px"}}>
+      <div style={{background:"#fff",borderRadius:"16px",maxWidth:"500px",margin:"0 auto",overflow:"hidden"}}>
+        <div style={{background:"linear-gradient(135deg,#1e3a5f,#2563eb)",padding:"20px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{color:"#fff",fontWeight:700,fontSize:"17px"}}>👥 Administrar Usuarios</div>
+          <button style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px"}}
+            onClick={onClose}>✕ Cerrar</button>
+        </div>
+
+        {msg && <div style={{padding:"10px 20px",background:"#f0fdf4",color:"#166534",fontSize:"13px",fontWeight:500}}>{msg}</div>}
+
+        <div style={{padding:"20px"}}>
+          {cargando ? (
+            <div style={{textAlign:"center",padding:"40px",color:"#94a3b8"}}>Cargando...</div>
+          ) : (
+            <>
+              {/* PENDIENTES */}
+              <div style={{marginBottom:"24px"}}>
+                <div style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:".8px",color:"#f59e0b",marginBottom:"12px"}}>
+                  ⏳ Solicitudes pendientes ({datos?.pendientes?.length||0})
+                </div>
+                {datos?.pendientes?.length===0 && <div style={{color:"#94a3b8",fontSize:"13px"}}>Sin solicitudes pendientes</div>}
+                {datos?.pendientes?.map(u=>(
+                  <div key={u.usuario} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#fffbeb",borderRadius:"10px",marginBottom:"8px",border:"1px solid #fde68a"}}>
+                    <div>
+                      <div style={{fontWeight:600,fontSize:"14px"}}>{u.nombre}</div>
+                      <div style={{fontSize:"12px",color:"#64748b"}}>{u.usuario} · {u.fecha}</div>
+                    </div>
+                    <div style={{display:"flex",gap:6}}>
+                      <button style={{background:"#22c55e",color:"#fff",border:"none",borderRadius:"7px",padding:"6px 10px",cursor:"pointer",fontSize:"12px",fontWeight:600}}
+                        onClick={()=>aprobar(u.usuario)}>✓ Aprobar</button>
+                      <button style={{background:"#ef4444",color:"#fff",border:"none",borderRadius:"7px",padding:"6px 10px",cursor:"pointer",fontSize:"12px",fontWeight:600}}
+                        onClick={()=>rechazar(u.usuario)}>✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* APROBADOS */}
+              <div>
+                <div style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:".8px",color:"#22c55e",marginBottom:"12px"}}>
+                  ✅ Usuarios aprobados ({datos?.aprobados?.length||0})
+                </div>
+                {datos?.aprobados?.map(u=>(
+                  <div key={u.usuario} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#f8fafc",borderRadius:"10px",marginBottom:"8px",border:"1px solid #e2e8f0"}}>
+                    <div>
+                      <div style={{fontWeight:600,fontSize:"14px"}}>{u.nombre}</div>
+                      <div style={{fontSize:"12px",color:"#64748b"}}>{u.usuario}</div>
+                    </div>
+                    <button style={{background:"#fee2e2",color:"#991b1b",border:"1px solid #fecdd3",borderRadius:"7px",padding:"6px 10px",cursor:"pointer",fontSize:"12px",fontWeight:600}}
+                      onClick={()=>eliminar(u.usuario)}>🗑️ Eliminar</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const CAMPOS_EDITABLES = ["Vendedor","Valor USD","RAZON SOCIAL","Producto","Marca","Real state","Observaciones","Estado"];
 
 function App() {
   const [vista, setVista] = useState("lista");
@@ -282,7 +424,11 @@ function App() {
   const [form, setForm] = useState({});
   const [edicion, setEdicion] = useState(false);
   const [toast, setToast] = useState(null);
-  const [error, setError] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [editFields, setEditFields] = useState({});
+  const [editando, setEditando] = useState(false);
+  const [modalGuardar, setModalGuardar] = useState(false);
+  const [adminPanel, setAdminPanel] = useState(false);
 
   const msg = (text, tipo="ok") => { setToast({text,tipo}); setTimeout(()=>setToast(null),3500); };
 
@@ -302,7 +448,7 @@ function App() {
   });
 
   const guardar = async (data) => {
-    setGuardando(true); setError("");
+    setGuardando(true); setErrorMsg("");
     try {
       const id = data.id || Date.now().toString();
       const campos = { id };
@@ -312,19 +458,19 @@ function App() {
         const upd = { ...data, ...campos };
         setOps(prev => prev.map(o => o.id===data.id ? upd : o));
         if (sel?.id===data.id) setSel(upd);
-        msg("Actualizado en Google Sheets ✓");
+        msg("Actualizado ✓");
       } else {
         setOps(prev => [...prev, { ...campos }]);
         msg("Guardado en Google Sheets ✓");
       }
       setVista(edicion ? "detalle" : "lista");
       setEdicion(false);
-    } catch(e) { setError("No se pudo guardar: " + e.message); }
+    } catch(e) { setErrorMsg("No se pudo guardar: " + e.message); }
     setGuardando(false);
   };
 
   const eliminar = async (id) => {
-    if (!confirm("¿Eliminar esta oportunidad?")) return;
+    if (!confirm("\u00bfEliminar esta oportunidad?")) return;
     try {
       await jsonp({ action:"delete", id });
       setOps(prev => prev.filter(o=>o.id!==id));
@@ -339,11 +485,46 @@ function App() {
     try {
       await jsonp({ action:"update", ...campos });
       setOps(prev=>prev.map(o=>o.id===id?upd:o));
-      setSel(upd); msg(`Estado → ${estado} ✓`);
+      setSel(upd); msg("Estado → "+estado+" ✓");
     } catch(e) { msg("Error: "+e.message,"err"); }
   };
 
-  // FORMULARIO
+  const iniciarEdicion = () => {
+    const campos = {};
+    CAMPOS_EDITABLES.forEach(c => { campos[c] = sel ? (sel[c] || "") : ""; });
+    setEditFields(campos);
+    setEditando(true);
+  };
+
+  const cancelarEdicion = () => { setEditando(false); setEditFields({}); };
+
+  const guardarEdicion = async (comoNueva) => {
+    setModalGuardar(false);
+    setGuardando(true);
+    try {
+      if (comoNueva) {
+        const nuevo = { ...sel, ...editFields, id: Date.now().toString() };
+        const campos = { id: nuevo.id };
+        CAMPOS.forEach(c => { campos[c] = nuevo[c] || ""; });
+        await jsonp({ action:"save", ...campos });
+        setOps(prev => [...prev, nuevo]);
+        setSel(nuevo);
+        msg("Guardado como nueva oportunidad ✓");
+      } else {
+        const actualizado = { ...sel, ...editFields };
+        const campos = { id: actualizado.id };
+        CAMPOS.forEach(c => { campos[c] = actualizado[c] || ""; });
+        await jsonp({ action:"update", ...campos });
+        setOps(prev => prev.map(o => o.id===sel.id ? actualizado : o));
+        setSel(actualizado);
+        msg("Oportunidad actualizada ✓");
+      }
+      setEditando(false); setEditFields({});
+    } catch(e) { msg("Error: "+e.message,"err"); }
+    setGuardando(false);
+  };
+
+  // ── FORMULARIO NUEVA ──────────────────────────────────────────────────────
   if (vista==="nueva" || edicion) return (
     <div className="app">
       <header className="hdr-bar">
@@ -357,66 +538,115 @@ function App() {
             <CampoSelect campo={c} value={form[c]||""} onChange={v=>setForm(p=>({...p,[c]:v}))}/>
           </div>
         ))}
-        {error && <div className="err-box">{error}</div>}
+        {errorMsg && <div className="err-box">{errorMsg}</div>}
         <div className="form-actions">
           <button className="btn-primary full" disabled={guardando}
             onClick={()=>guardar({...form, id:edicion?sel.id:null})}>
-            {guardando?"⏳ Guardando en Sheets...":"💾 Guardar Oportunidad"}
+            {guardando?"⏳ Guardando...":"💾 Guardar Oportunidad"}
           </button>
         </div>
       </div>
-      {toast && <div className={`toast ${toast.tipo}`}>{toast.text}</div>}
+      {toast && <div className={"toast "+toast.tipo}>{toast.text}</div>}
     </div>
   );
 
-  // DETALLE
+  // ── DETALLE ───────────────────────────────────────────────────────────────
   if (vista==="detalle" && sel) {
-    const col = COLORES[sel.Estado]||{bg:"#f3f4f6",text:"#374151",dot:"#9ca3af"};
+    const estadoActual = editando ? (editFields.Estado||sel.Estado) : sel.Estado;
+    const col = COLORES[estadoActual]||{bg:"#f3f4f6",text:"#374151",dot:"#9ca3af"};
     return (
       <div className="app">
         <header className="hdr-bar">
-          <button className="btn-back" onClick={()=>setVista("lista")}>← Volver</button>
-          <span className="hdr-title">Detalle</span>
-          <div style={{display:"flex",gap:8}}>
-            <button className="btn-icon" onClick={()=>{setForm({...sel});setEdicion(true);}}>✏️</button>
-            <button className="btn-icon" onClick={()=>exportarPDF(sel)}>📄 PDF</button>
-            <button className="btn-icon danger" onClick={()=>eliminar(sel.id)}>🗑️</button>
+          <button className="btn-back" onClick={()=>{cancelarEdicion();setVista("lista");}}>← Volver</button>
+          <span className="hdr-title">{editando?"Editando":"Detalle"}</span>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            {!editando && <button className="btn-icon" onClick={iniciarEdicion}>✏️ Editar</button>}
+            {!editando && <button className="btn-icon" onClick={()=>exportarPDF(sel)}>📄 PDF</button>}
+            {!editando && <button className="btn-icon danger" onClick={()=>eliminar(sel.id)}>🗑️</button>}
+            {editando && <button className="btn-icon" onClick={cancelarEdicion}>✕ Cancelar</button>}
+            {editando && <button className="btn-primary compact" disabled={guardando} onClick={()=>setModalGuardar(true)}>
+              {guardando?"...":"💾 Guardar"}
+            </button>}
           </div>
         </header>
+
         <div className="detail-wrap">
           <div className="detail-hero">
             <div className="d-nombre">{sel["Nombre Oportunidad"]||sel["RAZON SOCIAL"]||"Sin nombre"}</div>
-            <div className="d-sub">{sel["RAZON SOCIAL"]}</div>
+            <div className="d-sub">{editando?(editFields["RAZON SOCIAL"]||sel["RAZON SOCIAL"]):sel["RAZON SOCIAL"]}</div>
             <div className="ebadge" style={{background:col.bg,color:col.text}}>
-              <span className="edot" style={{background:col.dot}}></span>{sel.Estado||"Sin estado"}
+              <span className="edot" style={{background:col.dot}}></span>
+              {estadoActual||"Sin estado"}
             </div>
           </div>
-          <div className="estado-box">
-            <div className="sec-title">Cambiar Estado</div>
-            <div className="estado-btns">
-              {OPCIONES.Estado.map(e=>{
-                const c=COLORES[e];
-                return <button key={e} className={`ebtn${sel.Estado===e?" active":""}`}
-                  style={sel.Estado===e?{background:c.bg,color:c.text,borderColor:c.dot}:{}}
-                  onClick={()=>cambiarEstado(sel.id,e)}>{e}</button>;
-              })}
+
+          {editando ? (
+            <div style={{background:"#fff",borderRadius:"14px",border:"1.5px solid #2563eb",overflow:"visible",marginBottom:"12px"}}>
+              <div style={{padding:"10px 16px",background:"#eff6ff",borderBottom:"1px solid #dbeafe"}}>
+                <span style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:".8px",color:"#2563eb"}}>Campos editables</span>
+              </div>
+              {CAMPOS_EDITABLES.map(c=>(
+                <div key={c} style={{padding:"10px 16px",borderBottom:"1px solid #f1f5f9",position:"relative",zIndex:50}}>
+                  <div style={{fontSize:"11px",fontWeight:600,textTransform:"uppercase",letterSpacing:".6px",color:"#94a3b8",marginBottom:"6px"}}>{c}</div>
+                  <CampoSelect campo={c} value={editFields[c]||""} onChange={v=>setEditFields(p=>({...p,[c]:v}))}/>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="estado-box">
+              <div className="sec-title">Cambiar Estado</div>
+              <div className="estado-btns">
+                {OPCIONES.Estado.map(e=>{
+                  const c=COLORES[e];
+                  return <button key={e} className={"ebtn"+(sel.Estado===e?" active":"")}
+                    style={sel.Estado===e?{background:c.bg,color:c.text,borderColor:c.dot}:{}}
+                    onClick={()=>cambiarEstado(sel.id,e)}>{e}</button>;
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="detail-grid">
-            {CAMPOS.filter(c=>c!=="Estado"&&sel[c]).map(c=>(
+            {CAMPOS.filter(c=>c!=="Estado"&&(sel[c]||(editando&&editFields[c]))).map(c=>(
               <div className="drow" key={c}>
                 <span className="dlabel">{c}</span>
-                <span className="dval">{sel[c]}</span>
+                <span className="dval" style={editando&&CAMPOS_EDITABLES.includes(c)?{color:"#2563eb"}:{}}>
+                  {editando&&CAMPOS_EDITABLES.includes(c)?(editFields[c]||sel[c]||""):sel[c]}
+                </span>
               </div>
             ))}
           </div>
         </div>
-        {toast && <div className={`toast ${toast.tipo}`}>{toast.text}</div>}
+
+        {modalGuardar && (
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+            <div style={{background:"#fff",borderRadius:"16px",padding:"24px",width:"100%",maxWidth:"340px"}}>
+              <div style={{fontSize:"17px",fontWeight:700,color:"#1e293b",marginBottom:"6px"}}>¿Cómo querés guardar?</div>
+              <div style={{fontSize:"13px",color:"#64748b",marginBottom:"20px"}}>Actualizá la oportunidad existente o creá una nueva con los cambios.</div>
+              <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                <button style={{width:"100%",padding:"13px",background:"#2563eb",color:"#fff",border:"none",borderRadius:"10px",fontFamily:"inherit",fontSize:"14px",fontWeight:600,cursor:"pointer"}}
+                  onClick={()=>guardarEdicion(false)}>
+                  💾 Actualizar oportunidad original
+                </button>
+                <button style={{width:"100%",padding:"13px",background:"#f0fdf4",color:"#166534",border:"1.5px solid #bbf7d0",borderRadius:"10px",fontFamily:"inherit",fontSize:"14px",fontWeight:600,cursor:"pointer"}}
+                  onClick={()=>guardarEdicion(true)}>
+                  ✨ Guardar como nueva oportunidad
+                </button>
+                <button style={{width:"100%",padding:"10px",background:"#f1f5f9",color:"#475569",border:"1.5px solid #e2e8f0",borderRadius:"10px",fontFamily:"inherit",fontSize:"13px",cursor:"pointer"}}
+                  onClick={()=>setModalGuardar(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {toast && <div className={"toast "+toast.tipo}>{toast.text}</div>}
       </div>
     );
   }
 
-  // LISTA
+  // ── LISTA ─────────────────────────────────────────────────────────────────
   return (
     <div className="app">
       <header className="hdr-bar main">
@@ -426,6 +656,7 @@ function App() {
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button className="btn-icon sm" onClick={cargar} title="Actualizar">🔄</button>
+          <button className="btn-icon sm" onClick={()=>setAdminPanel(true)} title="Administrar usuarios">👥</button>
           <button className="btn-primary compact" onClick={()=>{setForm({});setVista("nueva");}}>+ Nueva</button>
         </div>
       </header>
@@ -442,7 +673,7 @@ function App() {
           const n=ops.filter(o=>o.Estado===e).length;
           const c=COLORES[e];
           return (
-            <button key={e} className={`chip${filtroEstado===e?" sel":""}`}
+            <button key={e} className={"chip"+(filtroEstado===e?" sel":"")}
               style={filtroEstado===e?{background:c.bg,color:c.text,borderColor:c.dot}:{}}
               onClick={()=>setFiltroEstado(filtroEstado===e?"":e)}>
               <span className="chip-dot" style={{background:c.dot}}></span>
@@ -453,13 +684,10 @@ function App() {
       </div>
       <div style={{display:"flex",gap:8,padding:"0 16px 12px",flexWrap:"wrap"}}>
         <button className="btn-icon" style={{fontSize:"12px",padding:"6px 12px"}}
-          onClick={()=>exportarTodoPDF(filtradas, filtroEstado)}>
-          📄 Exportar PDF ({filtradas.length})
+          onClick={()=>exportarTodoPDF(filtradas,filtroEstado)}>
+          📄 PDF ({filtradas.length})
         </button>
-        <button className="btn-icon" style={{fontSize:"12px",padding:"6px 12px"}}
-          onClick={()=>exportarCSV(filtradas)}>
-          📊 Exportar Excel/CSV ({filtradas.length})
-        </button>
+
       </div>
       {cargando ? (
         <div className="empty">
@@ -473,10 +701,10 @@ function App() {
           {filtradas.map(op=>{
             const col=COLORES[op.Estado]||{bg:"#f3f4f6",text:"#374151",dot:"#9ca3af"};
             return (
-              <div key={op.id} className="card" onClick={()=>{setSel(op);setVista("detalle");}}>
+              <div key={op.id} className="card" onClick={()=>{cancelarEdicion();setSel(op);setVista("detalle");}}>
                 <div className="card-main">
                   <div className="card-nombre">{op["Nombre Oportunidad"]||op["RAZON SOCIAL"]||"—"}</div>
-                  <div className="card-sub">{op["RAZON SOCIAL"]}{op.Provincia?` · ${op.Provincia}`:""}</div>
+                  <div className="card-sub">{op["RAZON SOCIAL"]}{op.Provincia?" · "+op.Provincia:""}</div>
                   <div className="tags">
                     {op.Producto&&<span className="tag">{op.Producto}</span>}
                     {op.Marca&&<span className="tag">{op.Marca}</span>}
@@ -494,13 +722,19 @@ function App() {
           })}
         </div>
       )}
-      <div className="footer">{ops.length} oportunidad{ops.length!==1?"es":""} · Google Sheets</div>
-      {toast && <div className={`toast ${toast.tipo}`}>{toast.text}</div>}
+      <div className="footer">{ops.length} oportunidad{ops.length!==1?"es":""} &#183; Google Sheets</div>
+      {toast && <div className={"toast "+toast.tipo}>{toast.text}</div>}
+      {adminPanel && <AdminPanel onClose={()=>setAdminPanel(false)}/>}
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+function Root() {
+  const [user, setUser] = useState(null);
+  if (!user) return <LoginScreen onLogin={setUser}/>;
+  return <App currentUser={user}/>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
 </script>
 </body>
 </html>
